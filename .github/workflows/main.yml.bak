@@ -1,10 +1,5 @@
-on: [push]
-
-env: 
-  ACTIONS_RUNTIME_URL: http://localhost:8080/
-  ACTIONS_RUNTIME_TOKEN: foo 
-  ACTIONS_CACHE_URL: http://localhost:8080/
-
+name: example
+on: push
 jobs:
   greeting:
     runs-on: ubuntu-latest
@@ -13,40 +8,41 @@ jobs:
 
   build_skim:
     needs: greeting
-    runs-on: 6.26.06-ubuntu22.04
+    runs-on: ubuntu-latest
     container: rootproject/root:${{ matrix.version }}
     strategy:
       matrix:
-        version: [6.26.06-conda, latest]
+        version: [6.22.00-conda]
     steps:
       - name: checkout repository
         uses: actions/checkout@v2
-
-      - run: apt-get update
-      - run: apt-get install -y nodejs
 
       - name: build
         run: |
           COMPILER=$(root-config --cxx)
           FLAGS=$(root-config --cflags --libs)
           $COMPILER -g -O3 -Wall -Wextra -Wpedantic -o skim skim.cxx $FLAGS
+      
+      - run: mkdir -p test
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: skim${{ matrix.version }}
-          path: skim
- 
+      - run: echo hello > test/world.txt
+
+      - uses: actions/upload-artifact@v3
+        with: 
+          name: my-artifact
+          path: test/world.txt
+      
   skim:
     needs: build_skim
-    runs-on: 6.26.06-ubuntu22.04
-    container: rootproject/root:6.26.06-conda
+    runs-on: ubuntu-latest
+    container: rootproject/root:6.22.00-conda
     steps:
       - name: checkout repository
         uses: actions/checkout@v2
 
-      - uses: actions/download-artifact@v2
-        with: 
-          name: skim6.26.06
+      - uses: actions/download-artifact@v3
+        with:
+          name: skim6.22.00-conda
 
       - name: skim
         run: ./skim
